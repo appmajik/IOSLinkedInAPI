@@ -33,6 +33,7 @@ NSString *kLinkedInDeniedByUser = @"the+user+denied+your+request";
 @property(nonatomic, copy) LIAAuthorizationCodeSuccessCallback successCallback;
 @property(nonatomic, copy) LIAAuthorizationCodeCancelCallback cancelCallback;
 @property(nonatomic, strong) LIALinkedInApplication *application;
+@property(nonatomic, strong) UIActivityIndicatorView *activityView;
 @end
 
 @interface LIALinkedInAuthorizationViewController (UIWebViewDelegate) <UIWebViewDelegate>
@@ -69,12 +70,20 @@ BOOL handlingRedirectURL;
   self.authenticationWebView.delegate = self;
   self.authenticationWebView.scalesPageToFit = YES;
   [self.view addSubview:self.authenticationWebView];
+    
+    self.activityView=[[UIActivityIndicatorView alloc]     initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+    self.activityView.color = [UIColor colorWithRed:0.227 green:0.400 blue:0.998 alpha:0.808];
+    self.activityView.center=self.view.center;
+    self.activityView.frame = CGRectOffset(self.activityView.frame, 0.0f, -20.0f);
+    self.activityView.hidesWhenStopped = YES;
+    [self.view addSubview:self.activityView];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
     NSString *linkedIn = [NSString stringWithFormat:@"https://www.linkedin.com/uas/oauth2/authorization?response_type=code&client_id=%@&scope=%@&state=%@&redirect_uri=%@", self.application.clientId, self.application.grantedAccessString, self.application.state, [self.application.redirectURL LIAEncode]];
     [self.authenticationWebView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:linkedIn]]];
     [[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:YES];
+    [self.activityView startAnimating];
 }
 
 - (void)viewWillLayoutSubviews {
@@ -140,6 +149,7 @@ BOOL handlingRedirectURL;
 
     // Turn off network activity indicator upon failure to load web view
     [[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:NO];
+    [self.activityView stopAnimating];
 
     if (!handlingRedirectURL)
         self.failureCallback(error);
@@ -149,6 +159,7 @@ BOOL handlingRedirectURL;
 
     // Turn off network activity indicator upon finishing web view load
 	[[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:NO];
+    [self.activityView stopAnimating];
 
 	/*fix for the LinkedIn Auth window - it doesn't scale right when placed into
 	 a webview inside of a form sheet modal. If we transform the HTML of the page
